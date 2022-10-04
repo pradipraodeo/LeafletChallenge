@@ -37,3 +37,57 @@ function createFeatures(platesdata,earthquakedata) {
     return '#bd0026'
     }
    }
+    // Create a GeoJSON layer containing the features array on the earthquakeData object
+    // Run the onEachFeature function once for each piece of data in the array
+    var earthquakes = L.geoJSON(earthquakedata, {
+        onEachFeature: onEachFeature,
+        pointToLayer: function (earthquakeData, latlng) {
+            return L.circleMarker(latlng, {
+                radius: earthquakeData.properties.mag * 6,
+                color: circleColor(earthquakeData.geometry.coordinates[2]),
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            });
+        }
+      });
+    
+    // Define a function we want to run once for each feature in the features array
+    // Give each feature a popup describing the place and time of the earthquake
+    function onEachFeature(feature, layer) {
+        layer.bindPopup("<h3>" + feature.properties.place +
+          "</h3><hr><p>" + new Date(feature.properties.time) + "</p>");
+      }
+      
+      // For lines
+      var lines = L.geoJSON(platesdata, {
+        onEachFeature: function (feature, layer) {
+          L.polyline(feature.geometry.coordinates);
+        },
+        style: function(feature) {
+          return {
+            color: "#2a52be",
+            weight: 3,
+            fillOpacity: 0
+          };
+        }
+      });
+  
+      // Sending our earthquakes and lines layer to the createMap function
+      createMap(earthquakes,lines);
+  }
+  
+// Function to create a map
+function createMap(earthquakes, lines) {
+
+    // Define Map layers
+    //  Greyscale
+     var greyscale = L.tileLayer("https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
+      attribution: "© <a href='https://www.mapbox.com/about/maps/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a> <strong><a href='https://www.mapbox.com/map-feedback/' target='_blank'>Improve this map</a></strong>",
+      tileSize: 512,
+      maxZoom: 18,
+      zoomOffset: -1,
+      id: "mapbox/light-v10",
+      accessToken: API_KEY
+      });
+  
