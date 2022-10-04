@@ -108,4 +108,52 @@ function createMap(earthquakes, lines) {
     id: "mapbox/outdoors-v11",
     accessToken: API_KEY
   });
+      
+   // Define a baseMaps object to hold our base layers
+   var baseMaps = {
+    "Satellite": satellite,
+    "Grayscale": greyscale,
+    "Outdoors": outdoors
+  };
+      
+  // Create overlay object to hold our overlay layer
+   var overlayMaps = {
+   "Earthquakes": earthquakes,
+   "Fault Lines": lines
+  };
   
+  // create map object
+  var myMap = L.map('map', {
+    center: [37.09, -95.71],
+    zoom: 3,
+    layers: [satellite, earthquakes, lines]
+    });
+ 
+   // Create a layer control
+   // Pass in our baseMaps and overlayMaps
+   // Add the layer control to the map
+   L.control.layers(baseMaps, overlayMaps, {
+   collapsed: false
+   }).addTo(myMap);
+ 
+   // Create a legend to display information about our map
+   var legend = L.control({position: 'bottomright'});
+   
+   // When the layer control is added, insert a div with the class of "info legend"
+   legend.onAdd = function (map) {
+   var div = L.DomUtil.create('div', 'info legend'),
+       levels = ['-10-10','10-30','30-50','50-70','70-90','90+'],
+       colors = ['#ffffcc','#addd8e','#9ebcda','#41b6c4','#253494','#bd0026'];
+ 
+   // loop through our levels and colors declared above
+   for (var i = 0; i < levels.length; i++) {
+       div.innerHTML += '<i style="background:' + colors[i] + '"></i>' + levels[i] + '<br>';
+   }
+    return div;
+   };
+  
+   // Add the legend to the map
+   legend.addTo(myMap);
+ 
+ }
+   
