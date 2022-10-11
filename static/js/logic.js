@@ -1,159 +1,173 @@
-// URLs for earthquakes and lines
-var queryUrl = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
-var lineUrl = "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json"
+// coordinates for North America
+var northAmericaCoordinates = [42.5260, -105.2551]
+var mapZoomLevel = 4;
 
+// create the createMap function
+function createMap(tierLayerSix, tierLayerFive, tierLayerFour, tierLayerThree, tierLayerTwo, tierLayerOne) {
 
-// Reading data and consoling
-d3.json(lineUrl, function(platesdata){
-  console.log(platesdata.features) 
-  d3.json(queryUrl, function(earthquakedata) {
-    console.log(earthquakedata.features)
-    createFeatures(platesdata,earthquakedata) 
-  
-  })
-  })
-
-//Function to create circle markers of the earthquakes and lines on the map
-function createFeatures(platesdata,earthquakedata) {
-
-    // Define function to set the circle color based on the magnitude
-    function circleColor(depth) {
-    if (depth < 10) {
-    return '#ffffcc'
-    }
-    else if (depth < 30) {
-    return '#addd8e'
-    }
-    else if (depth < 50) {
-    return '#9ebcda'
-    }
-    else if (depth < 70) {
-    return '#41b6c4'
-    }
-    else if (depth < 90) {
-    return '#253494'
-    }
-    else {
-    return '#bd0026'
-    }
-   }
-    // Create a GeoJSON layer containing the features array on the earthquakeData object
-    // Run the onEachFeature function once for each piece of data in the array
-    var earthquakes = L.geoJSON(earthquakedata, {
-        onEachFeature: onEachFeature,
-        pointToLayer: function (earthquakeData, latlng) {
-            return L.circleMarker(latlng, {
-                radius: earthquakeData.properties.mag * 6,
-                color: circleColor(earthquakeData.geometry.coordinates[2]),
-                weight: 1,
-                opacity: 1,
-                fillOpacity: 0.8
-            });
-        }
-      });
-    
-    // Define a function we want to run once for each feature in the features array
-    // Give each feature a popup describing the place and time of the earthquake
-    function onEachFeature(feature, layer) {
-        layer.bindPopup("<h3>" + feature.properties.place +
-          "</h3><hr><p>" + new Date(feature.properties.time) + "</p>");
-      }
-      
-      // For lines
-      var lines = L.geoJSON(platesdata, {
-        onEachFeature: function (feature, layer) {
-          L.polyline(feature.geometry.coordinates);
-        },
-        style: function(feature) {
-          return {
-            color: "#2a52be",
-            weight: 3,
-            fillOpacity: 0
-          };
-        }
-      });
-  
-      // Sending our earthquakes and lines layer to the createMap function
-      createMap(earthquakes,lines);
-  }
-  
-// Function to create a map
-function createMap(earthquakes, lines) {
-
-    // Define Map layers
-    //  Greyscale
-     var greyscale = L.tileLayer("https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
-      attribution: "© <a href='https://www.mapbox.com/about/maps/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a> <strong><a href='https://www.mapbox.com/map-feedback/' target='_blank'>Improve this map</a></strong>",
-      tileSize: 512,
-      maxZoom: 18,
-      zoomOffset: -1,
-      id: "mapbox/light-v10",
-      accessToken: API_KEY
-      });
-   // satellite
-   var satellite = L.tileLayer("https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
-    attribution: "© <a href='https://www.mapbox.com/about/maps/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a> <strong><a href='https://www.mapbox.com/map-feedback/' target='_blank'>Improve this map</a></strong>",
-    tileSize: 512,
-    maxZoom: 18,
-    zoomOffset: -1,
-    id: "mapbox/satellite-v9",
-    accessToken: API_KEY
-  });
-  // outdoors
-  var outdoors = L.tileLayer("https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
-    attribution: "© <a href='https://www.mapbox.com/about/maps/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a> <strong><a href='https://www.mapbox.com/map-feedback/' target='_blank'>Improve this map</a></strong>",
-    tileSize: 512,
-    maxZoom: 18,
-    zoomOffset: -1,
-    id: "mapbox/outdoors-v11",
-    accessToken: API_KEY
-  });
-      
-   // Define a baseMaps object to hold our base layers
-   var baseMaps = {
-    "Satellite": satellite,
-    "Grayscale": greyscale,
-    "Outdoors": outdoors
-  };
-      
-  // Create overlay object to hold our overlay layer
-   var overlayMaps = {
-   "Earthquakes": earthquakes,
-   "Fault Lines": lines
-  };
-  
-  // create map object
-  var myMap = L.map('map', {
-    center: [37.09, -95.71],
-    zoom: 3,
-    layers: [satellite, earthquakes, lines]
+    // Create the tile layer that will be the background of the map
+    var streetmap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     });
- 
-   // Create a layer control
-   // Pass in our baseMaps and overlayMaps
-   // Add the layer control to the map
-   L.control.layers(baseMaps, overlayMaps, {
-   collapsed: false
-   }).addTo(myMap);
- 
-   // Create a legend to display information about our map
-   var legend = L.control({position: 'bottomright'});
-   
-   // When the layer control is added, insert a div with the class of "info legend"
-   legend.onAdd = function (map) {
-   var div = L.DomUtil.create('div', 'info legend'),
-       levels = ['-10-10','10-30','30-50','50-70','70-90','90+'],
-       colors = ['#ffffcc','#addd8e','#9ebcda','#41b6c4','#253494','#bd0026'];
- 
-   // loop through our levels and colors declared above
-   for (var i = 0; i < levels.length; i++) {
-       div.innerHTML += '<i style="background:' + colors[i] + '"></i>' + levels[i] + '<br>';
-   }
-    return div;
-   };
-  
-   // Add the legend to the map
-   legend.addTo(myMap);
- 
- }
-   
+
+    // Create the satellite map tile layer
+    var Stamen_Toner = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}{r}.{ext}', {
+        attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        subdomains: 'abcd',
+        minZoom: 0,
+        maxZoom: 20,
+        ext: 'png'
+    });
+
+    // Create a baseMaps object to hold the streetmap layer
+    var baseMaps = {
+        'Street Map': streetmap,
+        'Satellite Map': Stamen_Toner
+    };
+
+    // Create an overlayMaps object to hold the earthquake layer
+    var overlayMaps = {
+        '90+ Earthquake Depth': tierLayerSix,
+        '70-90 Earthquake Depth': tierLayerFive,
+        '50-70 Earthquake Depth': tierLayerFour,
+        '30-50 Earthquake Depth': tierLayerThree,
+        '10-30 Earthquake Depth': tierLayerTwo,
+        '10 and Under Earthquake Depth': tierLayerOne
+    };
+
+    // Create the map object with options
+    var map = L.map('map', {
+        center: northAmericaCoordinates,
+        zoom: mapZoomLevel,
+        layers: [streetmap, tierLayerSix, tierLayerFive, tierLayerFour, tierLayerThree, tierLayerTwo, tierLayerOne]
+    })
+
+    // create a layer control, and pass it to baseMaps and overlayMaps and add the layer control to the map
+    L.control.layers(baseMaps, overlayMaps, {
+        collapsed: false
+    }).addTo(map);
+
+    // make a variable for the legend and position it in bottomright
+    var legend = L.control(
+        {
+            position: 'bottomright'
+        }
+    );
+
+    // add the properties for the legend
+    legend.onAdd = function () {
+        // create a div for the legend
+        var div = L.DomUtil.create('div', 'info legend');
+
+        var intervals = [0, 10, 30, 50, 70, 90];
+        // array to represent colors associated with the intervals
+        var colors = [
+            '#5aff00',
+            '#D8ff00',
+            '#Fff500',
+            '#Ffcf00',
+            '#Ff9000',
+            '#Ff0300'
+        ];
+
+        // use loop to generate labels within the div
+        // div starts empty, then is populated with the data from the arrays
+        for (var i = 0; i < intervals.length; i++) {
+            // display the colors and the interval values
+            // use .innerHTML to set the value of the color and the text for the interval
+            div.innerHTML += "<i style='background: " + colors[i] + "'></i>"
+                + intervals[i]
+                + (intervals[i + 1] ? "  &ndash; " + intervals[i + 1] + " earthquake depth<br>" : "+ earthquake depth");
+        }
+
+        return div;
+    };
+
+    // add legend to map
+    legend.addTo(map);
+
+};
+
+
+// Creating the createMarkers function -----for North America only northAmericaCoordinates = [42.5260, -105.2551]
+function createMarkers(data) {
+
+    // Pull the properties needed
+    // create array of features to go through
+    var features = data.features
+
+    // we need six set of arrays to hold the earthquake depths markers
+    var tierDepthSix = [] // array def for depth 90+
+    var tierDepthFive = [] // array def for depth 70-90
+    var tierDepthFour = [] // array def for depth 50-70
+    var tierDepthThree = [] // array def for depth 30-50
+    var tierDepthTwo = [] // array def for depth 10-30
+    var tierDepthOne = [] // array def for depth 10 and below
+
+    // Loop through the features array
+    for (var i = 0; i < features.length; i++) {
+
+        // change the marker size based on magnitude
+        var markerRadius = features[i].properties.mag * 4;
+        var markerColor;
+
+        // change marker color based on depth brackets defined
+        if (features[i].geometry.coordinates[2] > 90)
+            markerColor = '#Ff0300'
+        else if (features[i].geometry.coordinates[2] >= 70)
+            markerColor = '#Ff9000'
+        else if (features[i].geometry.coordinates[2] >= 50)
+            markerColor = '#Ffcf00'
+        else if (features[i].geometry.coordinates[2] >= 30)
+            markerColor = '#Fff500'
+        else if (features[i].geometry.coordinates[2] >= 10)
+            markerColor = '#D8ff00'
+        else
+            markerColor = '#5aff00'
+
+        // For each feature, create a marker and bind popup - same as my bike lesson
+        var earthquake = L.circleMarker([features[i].geometry.coordinates[1], features[i].geometry.coordinates[0]], {
+            fillOpacity: .50,
+            color: markerColor,
+            fillColor: markerColor,
+            radius: markerRadius,
+            weight: 1
+        })
+            .bindPopup(`<h2>Info:</h2>${features[i].properties.title}<hr><b>Depth:</b> ${features[i].geometry.coordinates[2]}`)
+
+        // populate array based on earthquake depth level
+        if (features[i].geometry.coordinates[2] > 90)
+            tierDepthSix.push(earthquake);
+        else if (features[i].geometry.coordinates[2] >= 70)
+            tierDepthFive.push(earthquake);
+        else if (features[i].geometry.coordinates[2] >= 50)
+            tierDepthFour.push(earthquake);
+        else if (features[i].geometry.coordinates[2] >= 30)
+            tierDepthThree.push(earthquake);
+        else if (features[i].geometry.coordinates[2] >= 10)
+            tierDepthTwo.push(earthquake);
+        else
+            tierDepthOne.push(earthquake);
+
+    };
+
+    // Create a layer group made from earthquake markers array and pass it to the createMap function
+    var tierLayerSix = L.layerGroup(tierDepthSix);
+    var tierLayerFive = L.layerGroup(tierDepthFive);
+    var tierLayerFour = L.layerGroup(tierDepthFour);
+    var tierLayerThree = L.layerGroup(tierDepthThree);
+    var tierLayerTwo = L.layerGroup(tierDepthTwo);
+    var tierLayerOne = L.layerGroup(tierDepthOne);
+
+    // createMap with all layers, yes you can pass multi parameters
+    createMap(tierLayerSix, tierLayerFive, tierLayerFour, tierLayerThree, tierLayerTwo, tierLayerOne);
+
+}
+
+// use d3 json to access queryurl data and API call to get earthquake info. 
+queryURL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson'
+
+//call create markers function
+d3.json(queryURL).then(
+    createMarkers
+);
